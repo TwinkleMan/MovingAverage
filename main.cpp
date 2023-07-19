@@ -1,18 +1,23 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include "chrono"
 
-constexpr int windowSize = 4;
-const std::string logFileName = "output.csv";
+int windowSize = 4;
+long long resTime = 0;
 
 template <typename T>
 std::vector<T> movingAverage(std::vector<T>& data)
 {
 	std::vector<T> result;
+    std::chrono::high_resolution_clock clock;
 
 	// The first windowSize - 1 elements won't produce input data - the window is not filled yet
 	result.reserve(data.size() - windowSize + 1);
 	float sum = 0.0f;
+
+    // Start clock
+    auto beg = std::chrono::high_resolution_clock::now();
 
 	// Count first window average
 	for (int i = 0; i < windowSize; i++)
@@ -27,6 +32,9 @@ std::vector<T> movingAverage(std::vector<T>& data)
 		sum = sum - data[i - windowSize] + data[i];
 		result.push_back(sum / windowSize);
 	}
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - beg);
+    resTime += 1000000 / duration.count();
 
 	return result;
 }
@@ -35,15 +43,14 @@ template <typename T>
 void log(std::vector<T>& data, std::string filename)
 {
 	std::ofstream out;
-	out.open(filename, std::ios::app);
+	out.open(filename);
 
 	if (out.is_open())
 	{
 		for (const auto& elem : data)
 		{
-			out << elem << ";";
+			out << elem << std::endl;
 		}
-		out << std::endl;
 		out.close();
 	}
 	else
@@ -52,22 +59,24 @@ void log(std::vector<T>& data, std::string filename)
 
 int main()
 {
-	std::ofstream file(logFileName, std::ios::trunc);
-	file.close();
+    srand(time(nullptr));
 
-	srand(time(nullptr));
+	std::vector<float> floatInput;
+    int testSize = 1000000;
+    for (int i = 0; i < testSize; i++)
+    {
+        floatInput.push_back(rand());
+    }
 
-	std::vector<float> input;
+    for (; windowSize <= 128; windowSize *= 2) {
+        auto result = movingAverage(floatInput);
+        for (int i = 0; i < 19; ++i) {
+            result = movingAverage(floatInput);
+        }
+        std::cout << "Logging processed array" << std::endl;
+        log(result, "output.csv");
 
-	int testSize = 1000000;
-	for (int i = 0; i < testSize; i++)
-	{
-		input.push_back(rand() % 500);
-	}
-	std::cout << "Logging initial array" << std::endl;
-	log(input, logFileName);
-
-	auto result = movingAverage(input);
-	std::cout << "Logging processed array" << std::endl;
-	log(result, logFileName);
+        resTime /= 20;
+        std::cout << "Result performance (window = " << windowSize << "): " << resTime << " count/ms\n\n";
+    }
 }
