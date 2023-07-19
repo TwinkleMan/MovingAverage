@@ -72,8 +72,9 @@ int main()
     std::vector<double> doubleInput;
     for (int i = 0; i < testDataSize; i++)
     {
-        floatInput.push_back(rand());
-        doubleInput.push_back(rand());
+        int number = rand() % 500 - 250;   // Randomized number, that gets pushed in both test vectors
+        floatInput.push_back(number);
+        doubleInput.push_back(number);
     }
 
     std::cout << "Testing for float values" << std::endl;
