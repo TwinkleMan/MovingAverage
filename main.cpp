@@ -7,7 +7,7 @@ int windowSize = 4;
 long long resTime = 0;
 
 template <typename T>
-std::vector<T> movingAverage(std::vector<T>& data)
+std::vector<T> movingAverage(const std::vector<T>& data)
 {
     std::vector<T> result;
     std::chrono::high_resolution_clock clock;
