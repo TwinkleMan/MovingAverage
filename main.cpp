@@ -3,14 +3,15 @@
 #include <vector>
 #include "chrono"
 
-int windowSize = 4;
-long long resTime = 0;
+int windowSize = 4;                 // Size of averaging window
+long long performance = 0;          // Performance (counts/ms)
+const int numberOfTests = 20;       // Number of tests for each window size
+const int testDataSize = 1000000;   // Number of elements in test
 
 template <typename T>
 std::vector<T> movingAverage(const std::vector<T>& data)
 {
     std::vector<T> result;
-    std::chrono::high_resolution_clock clock;
 
     // The first windowSize - 1 elements won't produce input data - the window is not filled yet
     result.reserve(data.size() - windowSize + 1);
@@ -32,13 +33,15 @@ std::vector<T> movingAverage(const std::vector<T>& data)
         sum = sum - data[i - windowSize] + data[i];
         result.push_back(sum / windowSize);
     }
+    // Stop clock
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - beg);
-    resTime += 1000000 / duration.count();
+    performance += 1000000 / duration.count();
 
     return result;
 }
 
+// Log data to file
 template <typename T>
 void log(std::vector<T>& data, std::string filename)
 {
@@ -47,10 +50,13 @@ void log(std::vector<T>& data, std::string filename)
 
     if (out.is_open())
     {
+        // Uncomment for full input data logging
 //		for (const auto& elem : data)
 //		{
 //			out << elem << std::endl;
 //		}
+
+        // Log only first number to decrease testing time
         out << data[0] << std::endl;
         out.close();
     }
@@ -64,8 +70,7 @@ int main()
 
     std::vector<float> floatInput;
     std::vector<double> doubleInput;
-    int testSize = 1000000;
-    for (int i = 0; i < testSize; i++)
+    for (int i = 0; i < testDataSize; i++)
     {
         floatInput.push_back(rand());
         doubleInput.push_back(rand());
@@ -73,28 +78,31 @@ int main()
 
     std::cout << "Testing for float values" << std::endl;
     for (; windowSize <= 128; windowSize *= 2) {
-        auto result = movingAverage(floatInput);
-        for (int i = 0; i < 19; ++i) {
+        // Run the processing 20 times to get
+        std::vector<float> result;
+        result.reserve(testDataSize);
+        for (int i = 0; i < numberOfTests; ++i) {
             result = movingAverage(floatInput);
         }
         std::cout << "Logging processed array" << std::endl;
         log(result, "output.csv");
 
-        resTime /= 20;
-        std::cout << "Result performance (window = " << windowSize << "): " << resTime << " count/ms\n\n";
+        performance /= numberOfTests;
+        std::cout << "Result performance (window = " << windowSize << "): " << performance << " count/ms\n\n";
     }
 
-    resTime = 0;
+    performance = 0;
     std::cout << "\n\nTesting for double values" << std::endl;
     for (windowSize = 4; windowSize <= 128; windowSize *= 2) {
-        auto result = movingAverage(doubleInput);
-        for (int i = 0; i < 19; ++i) {
+        std::vector<double> result;
+        result.reserve(testDataSize);
+        for (int i = 0; i < numberOfTests; ++i) {
             result = movingAverage(doubleInput);
         }
         std::cout << "Logging processed array" << std::endl;
         log(result, "output.csv");
 
-        resTime /= 20;
-        std::cout << "Result performance (window = " << windowSize << "): " << resTime << " count/ms\n\n";
+        performance /= numberOfTests;
+        std::cout << "Result performance (window = " << windowSize << "): " << performance << " count/ms\n\n";
     }
 }
